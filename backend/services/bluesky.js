@@ -2,7 +2,8 @@
 import axios from "axios";
 
 const LOGIN_URL = "https://bsky.social/xrpc/com.atproto.server.createSession";
-const TIMELINE_URL = "https://bsky.social/xrpc/app.bsky.feed.getTimeline";
+// const TIMELINE_URL = "https://bsky.social/xrpc/app.bsky.feed.getTimeline";
+const TIMELINE_URL = "https://api.bsky.app/xrpc/app.bsky.feed.getTimeline";
 
 let cachedAccessJwt = null;
 let cachedLoginAt = 0;
@@ -35,13 +36,13 @@ async function loginToBluesky() {
       console.log("🔐 Logged into Bluesky (session created)");
       return cachedAccessJwt;
     } else {
-      console.warn("⚠ Bluesky login succeeded but no accessJwt in response", data);
+      console.log("⚠ Bluesky login succeeded but no accessJwt in response", data);
       return null;
     }
   } catch (err) {
-    // Expose helpful message
+  
     const info = err?.response?.data || err?.message || err;
-    console.error("❌ Bluesky login error:", info);
+    console.log("❌ Bluesky login error:", info);
     return null;
   }
 }
@@ -73,8 +74,6 @@ export async function fetchPublicPosts(limit = 20) {
       const text = record?.text ?? record?.content ?? "";
       const createdAt = record?.createdAt ?? postObj?.indexedAt ?? new Date().toISOString();
       const avatar = author?.avatar || null;
-
-      // counts
       const replyCount = postObj?.replyCount ?? (postObj?.counts?.replies ?? 0);
       const repostCount = postObj?.repostCount ?? (postObj?.counts?.reposts ?? 0);
       const likeCount = postObj?.likeCount ?? (postObj?.counts?.likes ?? 0);
@@ -114,14 +113,12 @@ export async function fetchPublicPosts(limit = 20) {
 
     return posts;
   } catch (err) {
-    // Handle 401 specially: try re-login once
     const status = err?.response?.status;
     const info = err?.response?.data || err?.message || err;
     console.error("❌ Bluesky fetch error:", info);
 
     if (status === 401) {
       console.log("🔁 Received 401 — trying to refresh session and retry once");
-      // clear cached token and retry
       cachedAccessJwt = null;
       const token2 = await loginToBluesky();
       if (token2) {
@@ -151,8 +148,6 @@ export async function fetchPublicPosts(limit = 20) {
         }
       }
     }
-
-    // finally fallback to mocks
     return generateMockPosts(limit);
   }
 }

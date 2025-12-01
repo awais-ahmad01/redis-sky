@@ -115,7 +115,6 @@ export const addBookmark = async (req, res) => {
     `;
     const result = await pool.query(insertQuery, [userId, postId, postData]);
 
-    // Clear user's bookmark cache
     await redis.del(cacheKey(userId));
 
     if (result.rowCount === 0) {
@@ -138,7 +137,6 @@ export const addBookmark = async (req, res) => {
   }
 };
 
-// DELETE /bookmarks/:postId
 export const removeBookmark = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -153,7 +151,6 @@ export const removeBookmark = async (req, res) => {
     `;
     const result = await pool.query(deleteQuery, [userId, postId]);
 
-    // Invalidate cache
     await redis.del(cacheKey(userId));
 
     if (result.rowCount === 0) {
@@ -167,7 +164,6 @@ export const removeBookmark = async (req, res) => {
   }
 };
 
-// GET /bookmarks/check/:postId
 export const checkBookmark = async (req, res) => {
   try {
     const userId = req.user.id;
