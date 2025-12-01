@@ -1,6 +1,7 @@
 
 import { redis } from "../redis.js";
 import { fetchPublicPosts } from "./bluesky.js";
+import { redisPub } from "../redis.js";
 
 const FEED_LIST_KEY = "global_feed:list";
 const FEED_META_KEY = "global_feed:meta";
@@ -24,8 +25,8 @@ async function acquireMutex() {
 
 async function refreshCache() {
   try {
-    console.log("Fetching Bluesky public timeline with limit:", 20);
-    const posts = await fetchPublicPosts(20);
+    console.log("Fetching Bluesky public timeline with limit:", 30);
+    const posts = await fetchPublicPosts(30);
 
     if (!posts || !posts.length) {
       console.log("No posts fetched during refresh");
@@ -49,6 +50,9 @@ async function refreshCache() {
     await redis.expire(FEED_LIST_KEY, SHORT_TTL);
     await redis.expire(FEED_META_KEY, SHORT_TTL);
 
+    await redisPub.publish("feed_update", "new_posts");
+    console.log("📢 Published feed_update event");
+
     console.log(`🌐 Cache refreshed with ${posts.length} posts and short TTL ${SHORT_TTL}s`);
     return posts;
   } catch (err) {
@@ -59,7 +63,7 @@ async function refreshCache() {
     try {
       await redis.del(MUTEX_KEY);
     } catch (e) {
-      // ignore
+     
     }
   }
 }
